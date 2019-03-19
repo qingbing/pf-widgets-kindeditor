@@ -1,0 +1,45 @@
+{
+    "name": "qingbing/pf-widgets-kindeditor",
+    "description": "渲染部件——在线编辑器(kindeditor)",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "model",
+        "editor",
+        "kindeditor"
+    ],
+    "homepage": "http://www.phpcorner.net",
+    "authors": [
+        {
+            "name": "qingbing",
+            "email": "780042175@qq.com"
+        }
+    ],
+    "require": {
+        "qingbing/php-helper": ">=1.0, <2.0",
+        "qingbing/php-model": ">=1.0, <2.0",
+        "qingbing/php-web": ">=1.0, <2.0",
+        "qingbing/php-html": ">=1.0, <2.0",
+        "qingbing/php-render": ">=1.0, <2.0",
+        "qingbing/pf-components-assets-manager": ">=1.0, <2.0"
+    },
+    "require-dev": {
+        "qingbing/php-file-cache": ">=1.0, <2.0"
+    },
+    "autoload": {
+        "classmap": [
+            "src/KindEditor.php"
+        ],
+        "psr-4": {
+            "Widgets\\": "src/widgets",
+            "Controllers\\": "src/controllers"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TestApp\\": "test/app",
+            "Controllers\\": "test/controllers"
+        }
+    }
+}
