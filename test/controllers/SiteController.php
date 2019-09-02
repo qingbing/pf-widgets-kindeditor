@@ -34,4 +34,14 @@ class SiteController extends Controller
             'model' => $model,
         ]);
     }
+
+    /**
+     * @throws \Exception
+     * @throws \ReflectionException
+     */
+    public function actionCode()
+    {
+        $this->render('code', [
+        ]);
+    }
 }

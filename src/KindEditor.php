@@ -1,6 +1,7 @@
 <?php
 
 use Helper\FileManager;
+use Components\AssetsManager;
 
 /**
  * Link         :   http://www.phpcorner.net
@@ -57,7 +58,7 @@ class KindEditor
      * @param string $xFlag
      * @return bool
      */
-    static public function removeEditor($folder, $xFlag)
+    public static function removeEditor($folder, $xFlag)
     {
         if (empty($xFlag)) {
             return true;
@@ -67,5 +68,18 @@ class KindEditor
             return true;
         }
         return FileManager::rmdir($path, true);
+    }
+
+    /**
+     * 代码美化功能
+     * @throws \Exception
+     */
+    public static function codePrettify()
+    {
+        $src = dirname(__FILE__) . '/source/kindeditor';
+        $baseUri = AssetsManager::getInstance('assets-manager')->publish($src, 'kindeditor');
+        \ClientScript::getInstance()->registerCssFile("{$baseUri}/plugins/code/prettify.css");
+        \ClientScript::getInstance()->registerScriptFile("{$baseUri}/plugins/code/prettify.js");
+        \ClientScript::getInstance()->registerScript('', "window.onload = function () {prettyPrint();}");
     }
 }

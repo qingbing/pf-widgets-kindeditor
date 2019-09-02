@@ -17,8 +17,6 @@ use Html;
 
 class KindEditor extends OutputProcessor
 {
-    private static $_isLoadScript = false; // 编辑器的script是否已经加载
-
     /* @var \Abstracts\Model 编辑器所在模型 */
     public $model;
     /* @var string 当前编辑器显示类型 */
@@ -75,6 +73,10 @@ class KindEditor extends OutputProcessor
     /* @var string 编辑器ID */
     private $_htmlId;
 
+    private static $_isLoadScript = false; // 编辑器的script是否已经加载
+    private static $_baseUri;
+    private static $_isLoadCodeJs = false;
+
     /**
      * 组件自动调用
      * @throws \Exception
@@ -84,10 +86,21 @@ class KindEditor extends OutputProcessor
         if (!self::$_isLoadScript) {
             self::$_isLoadScript = true;
             $src = dirname(__DIR__) . '/source/kindeditor';
-            $baseUrl = AssetsManager::getInstance('assets-manager')->publish($src, 'kindeditor');
-            \ClientScript::getInstance()->registerScriptFile("{$baseUrl}/kindeditor-all-min.js");
-//            \ClientScript::getInstance()->registerScriptFile("{$baseUrl}/kindeditor-all.js");
-            \ClientScript::getInstance()->registerScriptFile("{$baseUrl}/lang/zh-CN.js");
+            self::$_baseUri = $baseUri = AssetsManager::getInstance('assets-manager')->publish($src, 'kindeditor');
+            \ClientScript::getInstance()->registerScriptFile("{$baseUri}/kindeditor-all-min.js");
+            \ClientScript::getInstance()->registerScriptFile("{$baseUri}/lang/zh-CN.js");
+        }
+    }
+
+    /**
+     * 当开启代码时，添加代码js
+     * @throws \Exception
+     */
+    protected function loadCodeJs()
+    {
+        if (!self::$_isLoadCodeJs) {
+            self::$_isLoadCodeJs = true;
+            \ClientScript::getInstance()->registerScriptFile(self::$_baseUri . "/plugins/code/code.js");
         }
     }
 
@@ -112,6 +125,84 @@ class KindEditor extends OutputProcessor
             $this->kFlag = $k_flag;
         }
         return $this->kFlag;
+    }
+
+    /**
+     * 插入组件
+     * @return array
+     * @throws \Exception
+     */
+    protected function plugins()
+    {
+        $items = $extraFileUploadParams = $ops = [];
+        $isUpload = false;
+
+        if ($this->image) {
+            $isUpload = true;
+            $items[] = 'image';
+            $items[] = 'multiimage';
+            if (!empty($this->imageExts)) {
+                $extraFileUploadParams['imageExts'] = $this->imageExts;
+            }
+        }
+        if ($this->file) {
+            $isUpload = true;
+            $items[] = 'insertfile';
+            // 限制 file 后缀
+            if (!empty($this->fileExts)) {
+                $extraFileUploadParams['fileExts'] = $this->fileExts;
+            }
+            // 允许文件上传
+            $ops['allowFileManager'] = true;
+            $ops['fillDescAfterUploadImage'] = true;
+        }
+        if ($this->flash) {
+            $isUpload = true;
+            $items[] = 'flash';
+            // 限制 flash 后缀
+            if (!empty($this->flashExts)) {
+                $extraFileUploadParams['flashExts'] = $this->flashExts;
+            }
+        }
+        if ($this->media) {
+            $isUpload = true;
+            $items[] = 'media';
+            // 限制 media 后缀
+            if (!empty($this->mediaExts)) {
+                $extraFileUploadParams['mediaExts'] = $this->mediaExts;
+            }
+        }
+        if ($this->code) {
+            $items[] = 'code';
+            $ops['cssPath'][] = self::$_baseUri . "/plugins/code/prettify.css";
+            $this->loadCodeJs();
+        }
+        if ($this->map) {
+            $items[] = 'map';
+        }
+        if ($this->bmap) {
+            $items[] = 'baidumap';
+        }
+        if ($this->wordPaste) {
+            $items[] = 'wordpaste';
+        }
+
+        if (empty($items)) {
+            return [];
+        }
+
+        array_unshift($items, '|');
+
+        if ($isUpload) {
+            $ops['extraFileUploadParams'] = array_merge($extraFileUploadParams, [
+                'folder' => $this->folder,
+                'kFlag' => $this->getKFlag(),
+            ]);
+            $ops['uploadJson'] = $this->createUrl('//kindEditor/upload');
+            $ops['fileManagerJson'] = $this->createUrl('//kindEditor/manage', $ops['extraFileUploadParams']);
+        }
+        $ops['items'] = $items;
+        return $ops;
     }
 
     /**
@@ -161,54 +252,17 @@ class KindEditor extends OutputProcessor
                     '|', 'selectall', 'cut', 'copy', 'paste', 'plainpaste',
                     '|', 'table', 'hr', 'insertorderedlist', 'insertunorderedlist', 'pagebreak', 'subscript', 'superscript',
                     '|', 'anchor', 'link', 'unlink',
-                    '|', 'template',
                 ];
-                if ($this->image) {
-                    $ops['items'][] = 'image';
-                    $ops['items'][] = 'multiimage';
+
+                // 插入组件
+                $temp = $this->plugins();
+                if (!empty($temp)) {
+                    $ops['items'] = array_merge($ops['items'], $temp['items']);
+                    unset($temp['items']);
+                    $ops = array_merge($ops, $temp);
                 }
-                if ($this->file) {
-                    $ops['items'][] = 'insertfile';
-                }
-                if ($this->flash) {
-                    $ops['items'][] = 'flash';
-                }
-                if ($this->media) {
-                    $ops['items'][] = 'media';
-                }
-                if ($this->code) {
-                    $ops['items'][] = 'code';
-                }
-                if ($this->map) {
-                    $ops['items'][] = 'map';
-                }
-                if ($this->bmap) {
-                    $ops['items'][] = 'baidumap';
-                }
-                if ($this->wordPaste) {
-                    $ops['items'][] = 'wordpaste';
-                }
-                $ops['items'] = array_merge($ops['items'], ['|', 'clearhtml', 'preview', 'quickformat', 'fullscreen', 'print']);
-                $ops['allowFileManager'] = true;
-                $ops['fillDescAfterUploadImage'] = true;
-                $ops['extraFileUploadParams'] = [
-                    'folder' => $this->folder,
-                    'kFlag' => $this->getKFlag(),
-                ];
-                if (!empty($this->imageExts)) {
-                    $ops['extraFileUploadParams']['imageExts'] = $this->imageExts;
-                }
-                if (!empty($this->flashExts)) {
-                    $ops['extraFileUploadParams']['flashExts'] = $this->flashExts;
-                }
-                if (!empty($this->mediaExts)) {
-                    $ops['extraFileUploadParams']['mediaExts'] = $this->mediaExts;
-                }
-                if (!empty($this->fileExts)) {
-                    $ops['extraFileUploadParams']['fileExts'] = $this->fileExts;
-                }
-                $ops['uploadJson'] = $this->createUrl('//kindEditor/upload');
-                $ops['fileManagerJson'] = $this->createUrl('//kindEditor/manage', $ops['extraFileUploadParams']);
+
+                $ops['items'] = array_merge($ops['items'], ['|', 'template', 'clearhtml', 'preview', 'quickformat', 'fullscreen', 'print']);
                 break;
             case \KindEditor::MODE_SIMPLE:
                 if ($this->openSource) {
@@ -221,8 +275,17 @@ class KindEditor extends OutputProcessor
                     '|', 'justifyleft', 'justifycenter', 'justifyright', 'justifyfull',
                     '|', 'insertorderedlist', 'insertunorderedlist',
                     '|', 'anchor', 'link', 'unlink',
-                    '|', 'quickformat'
                 ]);
+
+                // 插入组件
+                $temp = $this->plugins();
+                if (!empty($temp)) {
+                    $ops['items'] = array_merge($ops['items'], $temp['items']);
+                    unset($temp['items']);
+                    $ops = array_merge($ops, $temp);
+                }
+
+                $ops['items'] = array_merge($ops['items'], ['|', 'quickformat']);
                 break;
             default: // mini
                 if ($this->openSource) {
@@ -233,8 +296,17 @@ class KindEditor extends OutputProcessor
                 $ops['items'] = array_merge($ops['items'], [
                     'emoticons', 'bold', 'italic', 'underline', 'strikethrough',
                     '|', 'anchor', 'link', 'unlink',
-                    '|', 'quickformat'
                 ]);
+
+                // 插入组件
+                $temp = $this->plugins();
+                if (!empty($temp)) {
+                    $ops['items'] = array_merge($ops['items'], $temp['items']);
+                    unset($temp['items']);
+                    $ops = array_merge($ops, $temp);
+                }
+
+                $ops['items'] = array_merge($ops['items'], ['|', 'quickformat']);
                 break;
         }
         return $ops;

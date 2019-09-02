@@ -1,5 +1,6 @@
 <?php
 /* @var $this \Render\Controller */
+use Components\Request;
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -8,11 +9,11 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
-    <script src="assets/jquery-3.2.1.min.js"></script>
-    <script src="assets/h.js"></script>
+    <script src="<?php echo Request::httpRequest()->getBaseUrl(); ?>/assets/jquery-3.2.1.min.js"></script>
 </head>
 <body>
 <?php echo \Html::beginForm(); ?>
+
 <dl>
     <dt><?php echo \Html::activeLabel($model, 'username'); ?></dt>
     <dd><?php echo \Html::activeTextField($model, 'username'); ?></dd>
@@ -25,6 +26,7 @@
             'mode' => \KindEditor::MODE_MINI,
             'contentField' => 'content1',
             'folder' => 'test',
+            'code' => true,
         ]); ?>
     </dd>
 </dl>
@@ -36,6 +38,7 @@
             'mode' => \KindEditor::MODE_SIMPLE,
             'contentField' => 'content2',
             'folder' => 'test',
+            'code' => true,
         ]); ?>
     </dd>
 </dl>
@@ -47,6 +50,7 @@
             'mode' => \KindEditor::MODE_FULL,
             'contentField' => 'content3',
             'folder' => 'test',
+            'code' => true,
         ]); ?>
     </dd>
 </dl>
